@@ -2,9 +2,6 @@
 
 > A modern, feature-rich tic-tac-toe game with AI opponents, tournament mode, custom themes, and complete save/load functionality - all in a single HTML file!
 
-![Game Preview](https://img.shields.io/badge/Game-Ultimate%20Tic--Tac--Toe-brightgreen?style=for-the-badge&logo=games)
-![Version](https://img.shields.io/badge/Version-2.0-blue?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
 ## ✨ Features
 
@@ -338,23 +335,13 @@ copies or substantial portions of the Software.
 - **Animation Ideas**: CSS animation communities
 - **Testing**: Browser compatibility testing tools
 
-## 📞 Support
-
-Need help? Have questions? 
-
-- 📧 **Email**: support@ultimate-tictactoe.com
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/ultimate-tic-tac-toe/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/ultimate-tic-tac-toe/discussions)
-
----
-
 <div align="center">
 
 ### 🎮 Ready to Play?
 
-**[Download Now](./tic-tac-toe.html)** • **[Live Demo](#)** • **[Report Bug](#)** • **[Request Feature](#)**
+**[Download Now](./tic-tac-toe.html)**
 
-Made with ❤️ by developers who love great games
+Made with ❤️ by Mike who love great games
 
 **Star ⭐ this repo if you enjoyed playing!**
 
