@@ -344,6 +344,123 @@
             }
         }
 
+        .cell.preview {
+            background: rgba(255, 255, 255, 0.3) !important;
+            transform: scale(0.95);
+            animation: previewPulse 0.6s ease infinite alternate;
+        }
+
+        @keyframes previewPulse {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .board.shake {
+            animation: boardShake 0.5s ease;
+        }
+
+        @keyframes boardShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .ai-thinking-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            animation: aiThinking 1s ease infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes aiThinking {
+            0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 0.8; }
+            50% { transform: translate(-50%, -50%) scale(1.2) rotate(180deg); opacity: 1; }
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffd93d;
+            animation: confettiFall 3s linear infinite;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .score-animation {
+            animation: scoreUpdate 0.8s ease;
+        }
+
+        @keyframes scoreUpdate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); color: #ffd93d; }
+            100% { transform: scale(1); }
+        }
+
+        .difficulty .btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .difficulty .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .difficulty .btn.active::after {
+            left: 100%;
+        }
+
+        .move-trail {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 215, 61, 0.8), transparent);
+            pointer-events: none;
+            animation: trailFade 1s ease-out forwards;
+        }
+
+        @keyframes trailFade {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
         .x {
             color: #ff6b6b;
             text-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
@@ -491,8 +608,10 @@
             
             <div class="difficulty" id="difficulty-section" style="display: none;">
                 <span>AI:</span>
-                <button class="btn active" onclick="setDifficulty('easy')" id="btn-easy">😊 Easy</button>
-                <button class="btn" onclick="setDifficulty('hard')" id="btn-hard">😈 Hard</button>
+                <button class="btn" onclick="setDifficulty('easy')" id="btn-easy">😊 Easy</button>
+                <button class="btn" onclick="setDifficulty('medium')" id="btn-medium">🤔 Medium</button>
+                <button class="btn active" onclick="setDifficulty('hard')" id="btn-hard">😈 Hard</button>
+                <button class="btn" onclick="setDifficulty('impossible')" id="btn-impossible">💀 Impossible</button>
             </div>
 
             <div class="player-names" id="player-names-section">
@@ -594,7 +713,7 @@
         let gameBoard = ['', '', '', '', '', '', '', '', ''];
         let gameActive = true;
         let gameMode = 'pvp'; // 'pvp', 'ai', or 'tournament'
-        let aiDifficulty = 'easy'; // 'easy' or 'hard'
+        let aiDifficulty = 'hard'; // 'easy', 'medium', 'hard', or 'impossible'
         let scores = { x: 0, o: 0, draw: 0 };
         let moveCount = 0;
         let winningCombo = null;
@@ -888,7 +1007,7 @@
             document.getElementById('player-o-name').value = playerNames.o === 'Player O' ? '' : playerNames.o;
             
             setGameMode(gameState.gameMode || 'pvp');
-            setDifficulty(gameState.aiDifficulty || 'easy');
+            setDifficulty(gameState.aiDifficulty || 'hard');
 
             // Restore tournament if applicable
             if (gameState.tournamentData) {
@@ -992,12 +1111,19 @@
             }, 3000);
         }
 
-        // AI Logic
+        // AI Logic - Advanced Minimax with Alpha-Beta Pruning
         function getAIMove() {
-            if (aiDifficulty === 'easy') {
-                return getRandomMove();
-            } else {
-                return getSmartMove();
+            switch(aiDifficulty) {
+                case 'easy':
+                    return getRandomMove();
+                case 'medium':
+                    return getMediumMove();
+                case 'hard':
+                    return getMinimaxMove(6); // Depth 6
+                case 'impossible':
+                    return getMinimaxMove(9); // Full depth
+                default:
+                    return getRandomMove();
             }
         }
 
@@ -1009,44 +1135,280 @@
             return availableMoves[Math.floor(Math.random() * availableMoves.length)];
         }
 
-        function getSmartMove() {
-            // Check if AI can win
-            for (let i = 0; i < 9; i++) {
-                if (gameBoard[i] === '') {
-                    gameBoard[i] = 'O';
-                    if (checkWin()) {
-                        gameBoard[i] = '';
-                        return i;
-                    }
-                    gameBoard[i] = '';
-                }
+        function getMediumMove() {
+            // 70% strategic, 30% random for medium difficulty
+            if (Math.random() < 0.7) {
+                return getMinimaxMove(3); // Shallow minimax
+            } else {
+                return getRandomMove();
             }
-
-            // Check if AI needs to block player
-            for (let i = 0; i < 9; i++) {
-                if (gameBoard[i] === '') {
-                    gameBoard[i] = 'X';
-                    if (checkWin()) {
-                        gameBoard[i] = '';
-                        return i;
-                    }
-                    gameBoard[i] = '';
-                }
-            }
-
-            // Take center if available
-            if (gameBoard[4] === '') return 4;
-
-            // Take corners
-            const corners = [0, 2, 6, 8];
-            const availableCorners = corners.filter(corner => gameBoard[corner] === '');
-            if (availableCorners.length > 0) {
-                return availableCorners[Math.floor(Math.random() * availableCorners.length)];
-            }
-
-            // Take any available move
-            return getRandomMove();
         }
+
+        function getMinimaxMove(maxDepth) {
+            const result = minimax(gameBoard, maxDepth, -Infinity, Infinity, true);
+            return result.index;
+        }
+
+        function minimax(board, depth, alpha, beta, isMaximizing) {
+            const scores = {
+                'O': 10,  // AI wins
+                'X': -10, // Human wins
+                'tie': 0
+            };
+
+            const result = checkGameEnd(board);
+            if (result !== null) {
+                return { score: scores[result] };
+            }
+
+            if (depth === 0) {
+                return { score: evaluateBoard(board) };
+            }
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                let bestMove = -1;
+
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'O';
+                        const evalScore = minimax(board, depth - 1, alpha, beta, false);
+                        board[i] = '';
+
+                        if (evalScore.score > maxEval) {
+                            maxEval = evalScore.score;
+                            bestMove = i;
+                        }
+
+                        alpha = Math.max(alpha, evalScore.score);
+                        if (beta <= alpha) {
+                            break; // Alpha-beta pruning
+                        }
+                    }
+                }
+                return { score: maxEval, index: bestMove };
+            } else {
+                let minEval = Infinity;
+                let bestMove = -1;
+
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'X';
+                        const evalScore = minimax(board, depth - 1, alpha, beta, true);
+                        board[i] = '';
+
+                        if (evalScore.score < minEval) {
+                            minEval = evalScore.score;
+                            bestMove = i;
+                        }
+
+                        beta = Math.min(beta, evalScore.score);
+                        if (beta <= alpha) {
+                            break; // Alpha-beta pruning
+                        }
+                    }
+                }
+                return { score: minEval, index: bestMove };
+            }
+        }
+
+        function checkGameEnd(board) {
+            // Check for wins
+            for (let condition of winningConditions) {
+                const [a, b, c] = condition;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return board[a];
+                }
+            }
+
+            // Check for tie
+            if (board.every(cell => cell !== '')) {
+                return 'tie';
+            }
+
+            return null; // Game continues
+        }
+
+        function evaluateBoard(board) {
+            let score = 0;
+
+            // Evaluate each winning condition
+            for (let condition of winningConditions) {
+                score += evaluateLine(board, condition);
+            }
+
+            // Add positional bonuses
+            score += getPositionalScore(board);
+
+            return score;
+        }
+
+        function evaluateLine(board, [a, b, c]) {
+            let score = 0;
+            const line = [board[a], board[b], board[c]];
+            
+            const oCount = line.filter(cell => cell === 'O').length;
+            const xCount = line.filter(cell => cell === 'X').length;
+            const emptyCount = line.filter(cell => cell === '').length;
+
+            if (oCount === 3) score += 100;      // AI wins
+            else if (oCount === 2 && emptyCount === 1) score += 10;  // AI can win
+            else if (oCount === 1 && emptyCount === 2) score += 1;   // AI potential
+
+            if (xCount === 3) score -= 100;     // Human wins
+            else if (xCount === 2 && emptyCount === 1) score -= 10; // Block human win
+            else if (xCount === 1 && emptyCount === 2) score -= 1;  // Human potential
+
+            return score;
+        }
+
+        function getPositionalScore(board) {
+            let score = 0;
+            
+            // Center is most valuable
+            if (board[4] === 'O') score += 3;
+            else if (board[4] === 'X') score -= 3;
+
+            // Corners are valuable
+            const corners = [0, 2, 6, 8];
+            corners.forEach(corner => {
+                if (board[corner] === 'O') score += 2;
+                else if (board[corner] === 'X') score -= 2;
+            });
+
+            // Sides are least valuable
+            const sides = [1, 3, 5, 7];
+            sides.forEach(side => {
+                if (board[side] === 'O') score += 1;
+                else if (board[side] === 'X') score -= 1;
+            });
+
+            return score;
+        }
+
+        async function makeAIMove() {
+            if (!gameActive || currentPlayer !== 'O' || gameMode !== 'ai') return;
+
+            // Add AI thinking indicator to a random cell
+            const availableCells = document.querySelectorAll('.cell:not(.taken)');
+            if (availableCells.length > 0) {
+                const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
+                const indicator = document.createElement('div');
+                indicator.className = 'ai-thinking-indicator';
+                indicator.textContent = '🤖';
+                randomCell.style.position = 'relative';
+                randomCell.appendChild(indicator);
+
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.parentNode.removeChild(indicator);
+                    }
+                }, 1500);
+            }
+
+            document.getElementById('ai-thinking').style.display = 'block';
+            
+            // Realistic thinking time based on difficulty
+            const thinkingTime = {
+                'easy': 500 + Math.random() * 500,
+                'medium': 800 + Math.random() * 700,
+                'hard': 1200 + Math.random() * 1000,
+                'impossible': 1500 + Math.random() * 1500
+            };
+            
+            await new Promise(resolve => setTimeout(resolve, thinkingTime[aiDifficulty] || 1000));
+            
+            document.getElementById('ai-thinking').style.display = 'none';
+            
+            const aiMove = getAIMove();
+            if (aiMove !== undefined && aiMove !== null) {
+                // Add preview effect before making move
+                const previewCell = document.querySelector(`[data-index="${aiMove}"]`);
+                previewCell.classList.add('preview');
+                
+                setTimeout(() => {
+                    previewCell.classList.remove('preview');
+                    makeMove(aiMove + 1, true);
+                }, 300);
+            }
+        }
+
+        // Enhanced Animation Functions
+        function createMoveTrail(x, y) {
+            const trail = document.createElement('div');
+            trail.className = 'move-trail';
+            trail.style.left = x + 'px';
+            trail.style.top = y + 'px';
+            document.body.appendChild(trail);
+
+            setTimeout(() => {
+                if (trail.parentNode) {
+                    trail.parentNode.removeChild(trail);
+                }
+            }, 1000);
+        }
+
+        function shakeBoard() {
+            const board = document.getElementById('board');
+            board.classList.add('shake');
+            setTimeout(() => {
+                board.classList.remove('shake');
+            }, 500);
+        }
+
+        function createCelebration() {
+            const celebration = document.createElement('div');
+            celebration.className = 'celebration';
+            
+            // Create confetti
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = ['#ffd93d', '#ff6b6b', '#4ecdc4', '#a8e6cf', '#ff9f43'][Math.floor(Math.random() * 5)];
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                celebration.appendChild(confetti);
+            }
+            
+            document.body.appendChild(celebration);
+            
+            setTimeout(() => {
+                if (celebration.parentNode) {
+                    celebration.parentNode.removeChild(celebration);
+                }
+            }, 4000);
+        }
+
+        function animateScore(scoreElement) {
+            scoreElement.classList.add('score-animation');
+            setTimeout(() => {
+                scoreElement.classList.remove('score-animation');
+            }, 800);
+        }
+
+        // Enhanced game logic with animations
+        document.querySelectorAll('.cell').forEach(cell => {
+            cell.addEventListener('click', (e) => {
+                if (gameActive && !cell.classList.contains('taken')) {
+                    const index = parseInt(cell.dataset.index);
+                    
+                    // Create move trail effect
+                    const rect = cell.getBoundingClientRect();
+                    const x = rect.left + rect.width / 2;
+                    const y = rect.top + rect.height / 2;
+                    createMoveTrail(x, y);
+                    
+                    makeMove(index + 1);
+                }
+            });
+        });
+
+        document.getElementById('move-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                makeMove();
+            }
+        });
 
         async function makeMove(position = null, isAIMove = false) {
             if (!gameActive) return;
@@ -1064,6 +1426,7 @@
             if (!movePosition || movePosition < 1 || movePosition > 9) {
                 if (!isAIMove) {
                     showNotification('Please enter a number between 1 and 9!', 'error');
+                    shakeBoard();
                 }
                 return;
             }
@@ -1073,6 +1436,7 @@
             if (gameBoard[arrayIndex] !== '') {
                 if (!isAIMove) {
                     showNotification('That space is already taken! Choose another.', 'error');
+                    shakeBoard();
                 }
                 return;
             }
@@ -1097,6 +1461,15 @@
                 document.getElementById('game-result').innerHTML = 
                     `<span class="winner">${gameMode === 'ai' && currentPlayer === 'O' ? 'AI' : winnerName} Wins! 🎉</span>`;
                 
+                // Enhanced celebration
+                createCelebration();
+                
+                // Animate score update
+                const scoreElement = currentPlayer === 'X' ? 
+                    document.getElementById('score-x') : 
+                    document.getElementById('score-o');
+                animateScore(scoreElement);
+                
                 // Handle tournament progression
                 if (tournamentMode && tournamentMatches.length > 0) {
                     const matches = tournamentMatches.filter(m => m.round === tournamentRound);
@@ -1111,7 +1484,7 @@
                             } else {
                                 startNextMatch();
                             }
-                        }, 2000);
+                        }, 3000); // Wait for celebration
                     }
                 }
                 
@@ -1125,6 +1498,9 @@
                 scores.draw++;
                 updateScores();
                 document.getElementById('game-result').innerHTML = `<span class="draw">It's a Draw! 🤝</span>`;
+                
+                // Animate draw score
+                animateScore(document.getElementById('score-draw'));
                 
                 // Handle tournament draw - replay match
                 if (tournamentMode && tournamentMatches.length > 0) {
@@ -1149,38 +1525,6 @@
                 setTimeout(makeAIMove, 500);
             }
         }
-
-        async function makeAIMove() {
-            if (!gameActive || currentPlayer !== 'O' || gameMode !== 'ai') return;
-
-            document.getElementById('ai-thinking').style.display = 'block';
-            
-            // Add realistic thinking delay
-            await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
-            
-            document.getElementById('ai-thinking').style.display = 'none';
-            
-            const aiMove = getAIMove();
-            if (aiMove !== undefined && aiMove !== null) {
-                makeMove(aiMove + 1, true); // Pass true to indicate this is an AI move
-            }
-        }
-
-        // Enhanced game logic
-        document.querySelectorAll('.cell').forEach(cell => {
-            cell.addEventListener('click', () => {
-                if (gameActive && !cell.classList.contains('taken')) {
-                    const index = parseInt(cell.dataset.index);
-                    makeMove(index + 1);
-                }
-            });
-        });
-
-        document.getElementById('move-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                makeMove();
-            }
-        });
 
         function updateDisplay(index) {
             const cell = document.querySelector(`[data-index="${index}"]`);
@@ -1260,21 +1604,27 @@
         }
 
         function playWinSound() {
-            // Create a simple beep sound using Web Audio API
+            // Enhanced win sound with multiple tones
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
                 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                // Play a chord progression
+                const frequencies = [523.25, 659.25, 783.99]; // C, E, G major chord
                 
-                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C note
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.5);
+                frequencies.forEach((freq, index) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.1);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime + index * 0.1);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.1 + 0.5);
+                    
+                    oscillator.start(audioContext.currentTime + index * 0.1);
+                    oscillator.stop(audioContext.currentTime + index * 0.1 + 0.5);
+                });
             } catch (e) {
                 // Audio not supported, silently continue
             }
